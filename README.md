@@ -8,6 +8,12 @@
 
 <sub>Real output, local `qwen3:8b`, $0. The herbalist 미라 is cheerful at the market — until a flood hits and she panics, in character.</sub>
 
+### ▶ [**Try the live demo**](https://muse-code-space.github.io/maeul/) — a whole village running in *your* browser
+
+**[muse-code-space.github.io/maeul](https://muse-code-space.github.io/maeul/)** — pick a villager, talk to them, trigger a
+flood, watch them react. The LLM runs **entirely in your browser** (WebGPU) — no server, no key, **$0.**
+<sub>(Needs a recent desktop Chrome/Edge. First load downloads a small model once, then it's cached & offline.)</sub>
+
 Villagers with real personalities · dialogue that changes day to day · reactions that fit the moment
 (calm at the market, *terrified* in a flood) · and RAG answers grounded in **your** game's lore.
 
@@ -160,7 +166,8 @@ LLM-driven NPCs, not just use them: **[docs/course](docs/course/)**.
 - [x] Core engine — characters, world, memory, RAG lore, structured replies
 - [x] Local-first, zero-dependency core
 - [x] HTTP server + Unity client
-- [ ] **Embedded on-device** — WebLLM (browser) and llama.cpp bindings, no server
+- [x] **In-browser, on-device** — [live WebLLM demo](https://muse-code-space.github.io/maeul/), no server, no key ([`docs/`](docs/))
+- [ ] Embedded native — llama.cpp bindings for engines without a browser
 - [ ] Godot & Unreal adapters
 - [ ] Relationship graph & cross-villager gossip
 - [ ] Voice (local TTS) hooks

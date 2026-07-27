@@ -1,6 +1,9 @@
 # Maeul — 런칭 홍보 문안 (복붙용)
 
-공개 순간 그대로 쓸 수 있는 문안 모음. 링크는 실제 저장소 URL로 바꿔 쓸 것.
+공개 순간 그대로 쓸 수 있는 문안 모음.
+
+- 저장소: <https://github.com/MUSE-CODE-SPACE/maeul>
+- **라이브 데모(브라우저에서 바로 실행): <https://muse-code-space.github.io/maeul/>** ← 가장 강한 훅. 어디에 올리든 같이 걸 것.
 
 ---
 
@@ -45,8 +48,11 @@ Honest limitations: the zero-dep TF-IDF retriever doesn't do Korean morphology
 well (embeddings mode fixes it), and on-device *embedded* inference (WebLLM /
 llama.cpp bindings, no server) is still on the roadmap — today it's server-based.
 
+There's a live demo that runs the whole thing in your browser (WebLLM/WebGPU,
+no server, no key): https://muse-code-space.github.io/maeul/
+
 Repo + a runnable example village (4 villagers, lore, real outputs in the
-README): <REPO_URL>
+README): https://github.com/MUSE-CODE-SPACE/maeul
 MIT. Feedback very welcome.
 ```
 
@@ -72,7 +78,7 @@ Interesting bit: I A/B'd the three models in Korean — ERNIE 4.5 was ~2x faster
 (MoE), Qwen3 had the cleanest Korean (no Chinese-char leakage), DeepSeek-R1
 reasoned hardest. All local, all free.
 
-MIT, example village included: <REPO_URL>
+MIT, example village included: https://github.com/MUSE-CODE-SPACE/maeul
 ```
 
 ---
@@ -93,7 +99,7 @@ runs a local model (Ollama) and gives you villagers with real personalities.
 - Ground answers in YOUR lore (drop in markdown), no hallucinated history
 - Unity C# client included; server runs locally (free) or on Railway
 
-MIT, runnable example village with 4 villagers + lore: <REPO_URL>
+MIT, runnable example village with 4 villagers + lore: https://github.com/MUSE-CODE-SPACE/maeul
 Would love feedback from anyone doing sim/RPG/village games.
 ```
 
@@ -118,7 +124,7 @@ Would love feedback from anyone doing sim/RPG/village games.
 RAG 세계관 고증도 추가 다운로드 없이.
 
 **6/** MIT, 예제 마을(주민 4명 + 로어) 포함. 5분이면 붙습니다.
-⭐ <REPO_URL>
+⭐ https://github.com/MUSE-CODE-SPACE/maeul
 피드백 환영합니다!
 
 ---
@@ -139,5 +145,5 @@ RAG 세계관 고증도 추가 다운로드 없이.
 - 의존성 0 코어 + FastAPI 서버 + Unity 클라이언트 + Railway 배포
 
 이름 '마을'처럼 한국에서 만들었고, MIT입니다. 예제 마을 포함.
-<REPO_URL>
+https://github.com/MUSE-CODE-SPACE/maeul
 ```
