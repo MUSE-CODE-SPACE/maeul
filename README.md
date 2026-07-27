@@ -11,7 +11,7 @@
 ### ▶ [**Try the live demo**](https://muse-code-space.github.io/maeul/) — a whole village running in *your* browser
 
 **[muse-code-space.github.io/maeul](https://muse-code-space.github.io/maeul/)** — pick a villager, talk to them, trigger a
-flood, watch them react. The LLM runs **entirely in your browser** (WebGPU) — no server, no key, **$0.**
+flood, watch them react. The LLM runs **entirely in your browser** (WebGPU) — no server, no key, **$0.** Bilingual (한국어 / English).
 <sub>(Needs a recent desktop Chrome/Edge. First load downloads a small model once, then it's cached & offline.)</sub>
 
 Villagers with real personalities · dialogue that changes day to day · reactions that fit the moment
