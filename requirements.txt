@@ -1,0 +1,3 @@
+# Core is dependency-free. These are only for running the HTTP server (maeul serve).
+fastapi>=0.110
+uvicorn[standard]>=0.29

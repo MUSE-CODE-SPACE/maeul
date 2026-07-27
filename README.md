@@ -133,6 +133,24 @@ maeul.PushEvent("earthquake", 0.9f);      // every villager reacts, in-character
 
 Tested locally with `qwen3:8b`, `ernie4.5:21b`, `deepseek-r1:8b`.
 
+## Deploy it to the web (Railway, Render, Fly…)
+
+The server is a plain FastAPI app — deploy it anywhere. On a cloud box (no local
+Ollama) you point the model backend at a **free-tier hosted model** or your own
+machine via a tunnel, so it can stay $0. `Procfile` + `railway.json` are
+included. Full guide: **[docs/DEPLOY.md](docs/DEPLOY.md)**.
+
+```bash
+# cloud config is all env-driven:
+PORT=8000 HOST=0.0.0.0 MAEUL_MODEL=qwen3:8b python -m maeul.cli serve
+```
+
+## Learn how it's built (course)
+
+Maeul doubles as a **build-along course** — 11 lessons that build this exact
+engine from scratch, each mapped to a real file. Great if you want to understand
+LLM-driven NPCs, not just use them: **[docs/course](docs/course/)**.
+
 ## Roadmap
 
 - [x] Core engine — characters, world, memory, RAG lore, structured replies

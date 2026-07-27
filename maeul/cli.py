@@ -11,11 +11,14 @@ def main(argv=None):
     sub = ap.add_subparsers(dest="cmd")
 
     s = sub.add_parser("serve", help="run the HTTP server (game engines connect here)")
-    s.add_argument("--village", default="examples/village", help="dir of character cards + lore")
+    s.add_argument("--village", default=os.environ.get("MAEUL_VILLAGE", "examples/village"),
+                   help="dir of character cards + lore")
     s.add_argument("--model", default=os.environ.get("MAEUL_MODEL", "qwen3:8b"))
     s.add_argument("--base-url", default=os.environ.get("MAEUL_BASE_URL", "http://localhost:11434/v1"))
-    s.add_argument("--host", default="127.0.0.1")
-    s.add_argument("--port", type=int, default=8000)
+    s.add_argument("--api-key", default=os.environ.get("MAEUL_API_KEY") or None)
+    # Cloud hosts (Railway, Render, Fly…) inject $PORT and need 0.0.0.0.
+    s.add_argument("--host", default=os.environ.get("HOST", "127.0.0.1"))
+    s.add_argument("--port", type=int, default=int(os.environ.get("PORT", "8000")))
     s.add_argument("--embeddings", action="store_true", help="use local Ollama embeddings for RAG")
 
     c = sub.add_parser("chat", help="chat with a villager in the terminal")
@@ -34,9 +37,10 @@ def main(argv=None):
             return 2
         from .server import build_app
         app = build_app(args.village, model=args.model, base_url=args.base_url,
-                        use_embeddings=args.embeddings)
+                        api_key=args.api_key, use_embeddings=args.embeddings)
+        local = ("localhost" in args.base_url) or ("127.0.0.1" in args.base_url)
         print(f"Maeul serving {args.village} on http://{args.host}:{args.port}  "
-              f"(model {args.model}, {'local $0' if 'localhost' in args.base_url or '127.0.0.1' in args.base_url else 'remote'})")
+              f"(model {args.model}, {'local $0' if local else 'remote backend'})")
         uvicorn.run(app, host=args.host, port=args.port, log_level="info")
         return 0
 
