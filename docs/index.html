@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>마을 · Maeul — 브라우저 안에서 도는 게임 NPC LLM</title>
+<meta name="description" content="게임 마을 NPC를 위한 무료·온디바이스 LLM 엔진. 이 데모의 모든 추론은 당신의 브라우저 안에서 돕니다 — 서버 없음, API 키 없음, $0." />
+<style>
+  :root {
+    --ground:#0b0e14; --panel:#131926; --panel2:#0f141e; --line:rgba(255,255,255,.08);
+    --ink:#f4f2ec; --dim:rgba(244,242,236,.58); --faint:rgba(244,242,236,.34);
+    --lantern:#ffce6b; --lantern-dim:rgba(255,206,107,.16);
+    --good:#4fd67f; --bad:#e8564b; --warn:#f2b04a; --cold:#69b7ff; --muted:#8a93a6;
+    --r:14px;
+    font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  }
+  * { box-sizing:border-box; }
+  body {
+    margin:0; min-height:100vh; color:var(--ink);
+    background:
+      radial-gradient(1100px 620px at 50% -12%, rgba(255,206,107,.10), transparent 62%),
+      radial-gradient(800px 500px at 92% 8%, rgba(105,183,255,.06), transparent 60%),
+      var(--ground);
+  }
+  code, .mono { font-family:ui-monospace,"SF Mono","JetBrains Mono",Menlo,monospace; }
+  .wrap { max-width:1120px; margin:0 auto; padding:28px 20px 64px; }
+
+  /* ── Header ── */
+  header { display:flex; flex-wrap:wrap; align-items:flex-end; gap:14px 24px; margin-bottom:20px; }
+  .brand { font-weight:900; font-size:34px; letter-spacing:-.02em; line-height:1; }
+  .brand em { font-style:normal; color:var(--lantern); }
+  .brand small { display:block; margin-top:7px; font-size:14px; font-weight:700;
+    letter-spacing:.16em; color:var(--faint); }
+  .tag { flex:1 1 320px; min-width:260px; color:var(--dim); font-size:15px; line-height:1.6; }
+  .tag b { color:var(--ink); }
+  .tag .free { color:var(--lantern); font-weight:800; }
+  .ghlink { color:var(--dim); text-decoration:none; font-weight:700; font-size:13px;
+    border:1px solid var(--line); border-radius:999px; padding:7px 14px; white-space:nowrap; }
+  .ghlink:hover { color:var(--ink); border-color:var(--lantern-dim); }
+
+  /* ── Model loader strip ── */
+  .modelbar { display:flex; flex-wrap:wrap; align-items:center; gap:12px;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+    padding:14px 16px; margin-bottom:16px; }
+  .modelbar .lead { font-weight:800; font-size:14px; }
+  .modelbar .lead .dot { color:var(--lantern); }
+  select { background:var(--panel2); color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:8px 10px; font-size:13px; font-family:inherit; }
+  button { font-family:inherit; cursor:pointer; }
+  .btn { background:var(--lantern); color:#1a1206; border:none; border-radius:10px;
+    padding:9px 16px; font-weight:800; font-size:14px; }
+  .btn:hover { filter:brightness(1.06); }
+  .btn:disabled { opacity:.5; cursor:default; }
+  #model-status { font-size:13px; color:var(--faint); font-weight:700; margin-left:auto; }
+  #model-status.ready { color:var(--good); }
+  #loader { display:none; flex-basis:100%; margin-top:4px; }
+  #loader.show { display:block; }
+  .track { height:7px; background:var(--panel2); border-radius:99px; overflow:hidden; margin-bottom:6px; }
+  #load-bar { height:100%; width:0; background:linear-gradient(90deg,var(--lantern),#ffdf9c);
+    transition:width .3s ease; }
+  #load-text { font-size:12px; color:var(--dim); }
+
+  /* ── World bar ── */
+  .worldbar { display:flex; flex-wrap:wrap; align-items:center; gap:10px;
+    background:var(--panel2); border:1px solid var(--line); border-radius:var(--r);
+    padding:12px 14px; margin-bottom:16px; }
+  .world-facts { display:flex; align-items:center; gap:8px; font-weight:800; font-size:14px; }
+  .pill { background:rgba(255,255,255,.05); border:1px solid var(--line); border-radius:99px;
+    padding:5px 11px; font-size:12px; color:var(--dim); font-weight:700; }
+  .state { border-radius:99px; padding:5px 12px; font-size:12px; font-weight:800; }
+  .state.calm { background:rgba(79,214,127,.14); color:var(--good); }
+  .state.bad  { background:rgba(232,86,75,.16); color:var(--bad); }
+  .world-actions { display:flex; flex-wrap:wrap; gap:8px; margin-left:auto; }
+  .wbtn { background:var(--panel); color:var(--ink); border:1px solid var(--line);
+    border-radius:9px; padding:8px 12px; font-size:13px; font-weight:700; }
+  .wbtn:hover { border-color:var(--lantern-dim); background:#1a2130; }
+  .wbtn.danger:hover { border-color:rgba(232,86,75,.4); color:#ffb4ac; }
+
+  /* ── Main layout ── */
+  .main { display:grid; grid-template-columns:270px 1fr; gap:16px; }
+  @media (max-width:760px){ .main { grid-template-columns:1fr; } }
+
+  .col-title { font-size:12px; font-weight:800; letter-spacing:.12em; color:var(--faint);
+    text-transform:uppercase; margin:2px 4px 10px; }
+
+  /* Roster */
+  #roster { display:flex; flex-direction:column; gap:9px; }
+  .villager { display:flex; align-items:center; gap:11px; width:100%; text-align:left;
+    background:var(--panel); border:1px solid var(--line); border-radius:12px;
+    padding:11px 12px; color:var(--ink); transition:border-color .15s, background .15s; }
+  .villager:hover { background:#1a2130; }
+  .villager.on { border-color:var(--lantern); background:#1b2233;
+    box-shadow:0 0 0 1px var(--lantern-dim), 0 8px 24px rgba(0,0,0,.35); }
+  .villager .ava { font-size:26px; width:34px; text-align:center; }
+  .villager .who { flex:1; display:flex; flex-direction:column; line-height:1.25; }
+  .villager .who b { font-size:15px; }
+  .villager .who small { color:var(--faint); font-size:12px; font-weight:600; }
+  .villager .mood { font-size:20px; }
+
+  /* Chat */
+  .chat { background:var(--panel); border:1px solid var(--line); border-radius:var(--r);
+    display:flex; flex-direction:column; min-height:520px; overflow:hidden; }
+  .chat-head { display:flex; align-items:center; gap:11px; padding:14px 16px;
+    border-bottom:1px solid var(--line); }
+  #chat-ava { font-size:24px; }
+  .chat-head b { font-size:15px; }
+  .chat-head .env { margin-left:auto; font-size:11px; color:var(--faint); font-weight:700;
+    letter-spacing:.04em; }
+  #log { flex:1; overflow-y:auto; padding:18px 16px; display:flex; flex-direction:column; gap:14px; }
+  .hint { color:var(--faint); font-size:14px; line-height:1.6; text-align:center;
+    margin:auto 8px; max-width:420px; }
+
+  .msg { display:flex; gap:10px; max-width:100%; }
+  .msg.you { justify-content:flex-end; }
+  .bubble { border-radius:13px; padding:10px 14px; font-size:15px; line-height:1.55;
+    max-width:78%; word-break:break-word; }
+  .msg.you .bubble { background:#26314a; color:#eaf1ff; border-bottom-right-radius:4px; }
+  .msg.npc { align-items:flex-start; }
+  .npc-body { display:flex; flex-direction:column; gap:5px; min-width:0; }
+  .npc-line { background:var(--panel2); border:1px solid var(--line); border-bottom-left-radius:4px; }
+  .npc-line.streaming::after { content:"▋"; color:var(--lantern); animation:blink 1s steps(1) infinite; }
+  @keyframes blink { 50%{ opacity:0; } }
+  .action { font-size:12px; color:var(--faint); font-style:italic; padding-left:3px; }
+  .badge { flex:none; font-weight:900; font-size:12px; border-radius:8px; padding:4px 9px;
+    letter-spacing:.02em; text-transform:lowercase; }
+  .badge.good { background:var(--good); color:#08240f; }
+  .badge.bad  { background:var(--bad); color:#fff; }
+  .badge.warn { background:var(--warn); color:#2a1c02; }
+  .badge.cold { background:var(--cold); color:#04203f; }
+  .badge.muted{ background:#39435a; color:#dfe6f2; }
+
+  .msg.event { justify-content:center; font-family:ui-monospace,monospace; font-size:13px;
+    color:var(--lantern); background:rgba(255,206,107,.07); border:1px dashed var(--lantern-dim);
+    border-radius:10px; padding:9px 12px; align-items:center; gap:8px; text-align:center; }
+  .msg.event b { color:var(--bad); }
+  .evt-dot { width:8px; height:8px; border-radius:50%; background:var(--bad);
+    box-shadow:0 0 0 0 rgba(232,86,75,.6); animation:pulse 1.4s infinite; flex:none; }
+  @keyframes pulse { 0%{box-shadow:0 0 0 0 rgba(232,86,75,.5);} 70%{box-shadow:0 0 0 8px rgba(232,86,75,0);} }
+
+  .composer { display:flex; gap:9px; padding:12px 14px; border-top:1px solid var(--line); }
+  #input { flex:1; background:var(--panel2); border:1px solid var(--line); border-radius:10px;
+    padding:11px 13px; color:var(--ink); font-size:15px; font-family:inherit; resize:none; }
+  #input:focus { outline:none; border-color:var(--lantern-dim); }
+  #input:disabled { opacity:.5; }
+  #send { background:var(--lantern); color:#1a1206; border:none; border-radius:10px;
+    padding:0 18px; font-weight:800; font-size:15px; }
+  #send:disabled { opacity:.4; cursor:default; }
+
+  /* Crisis atmosphere */
+  #vignette { position:fixed; inset:0; pointer-events:none; opacity:0; z-index:2;
+    background:radial-gradient(120% 90% at 50% 120%, rgba(232,86,75,.22), transparent 55%);
+    transition:opacity .6s ease; }
+  body.crisis #vignette { opacity:1; }
+
+  /* Toast */
+  #toast { position:fixed; left:50%; bottom:26px; transform:translateX(-50%) translateY(20px);
+    background:#1c2434; border:1px solid var(--lantern-dim); color:var(--ink);
+    padding:11px 18px; border-radius:999px; font-size:14px; font-weight:700; z-index:9;
+    opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; box-shadow:0 12px 40px rgba(0,0,0,.5); }
+  #toast.show { opacity:1; transform:translateX(-50%) translateY(0); }
+
+  /* WebGPU gate */
+  #gate { position:fixed; inset:0; z-index:20; display:none; align-items:center; justify-content:center;
+    background:rgba(6,9,14,.86); backdrop-filter:blur(3px); padding:24px; }
+  #gate.show { display:flex; }
+  .gate-card { max-width:440px; background:var(--panel); border:1px solid var(--line);
+    border-radius:16px; padding:26px; text-align:center; }
+  .gate-card h2 { margin:0 0 10px; font-size:20px; }
+  .gate-card p { color:var(--dim); font-size:14px; line-height:1.65; }
+  .gate-card a { color:var(--lantern); }
+
+  footer { margin-top:26px; color:var(--faint); font-size:13px; line-height:1.7; text-align:center; }
+  footer code { color:var(--dim); }
+  footer a { color:var(--dim); }
+</style>
+</head>
+<body>
+<div id="vignette"></div>
+<div class="wrap">
+
+  <header>
+    <div class="brand">마을 · <em>Maeul</em><small>ON-DEVICE NPC LLM</small></div>
+    <div class="tag">
+      게임 마을 NPC를 위한 <b>무료·온디바이스</b> LLM 엔진.
+      이 데모의 <b>모든 추론은 당신의 브라우저 안에서</b> 돕니다 —
+      <span class="free">서버 없음 · API 키 없음 · $0.</span>
+    </div>
+    <a class="ghlink" href="https://github.com/MUSE-CODE-SPACE/maeul" target="_blank" rel="noopener">★ GitHub</a>
+  </header>
+
+  <!-- Model loader -->
+  <div class="modelbar" id="controls">
+    <span class="lead"><span class="dot">◆</span> 브라우저 모델</span>
+    <select id="model-select" aria-label="모델 선택"></select>
+    <button class="btn" id="load-btn">모델 켜기</button>
+    <span id="model-status">● 아직 안 켜짐</span>
+    <div id="loader">
+      <div class="track"><div id="load-bar"></div></div>
+      <div id="load-text">불러오는 중…</div>
+    </div>
+  </div>
+
+  <!-- World bar -->
+  <div class="worldbar">
+    <div class="world-facts">
+      <span class="pill" id="world-day">Day 1</span>
+      <span class="pill" id="world-time">아침</span>
+      <span class="pill" id="world-weather">맑음</span>
+      <span class="state calm" id="world-state">평온</span>
+    </div>
+    <div class="world-actions">
+      <button class="wbtn danger" id="btn-flood">🌊 홍수</button>
+      <button class="wbtn danger" id="btn-quake">⚡ 지진</button>
+      <button class="wbtn danger" id="btn-fire">🔥 화재</button>
+      <button class="wbtn" id="btn-calm">☀️ 평온</button>
+      <button class="wbtn" id="btn-day">🌅 다음 날</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div class="main">
+    <div>
+      <div class="col-title">마을 주민</div>
+      <div id="roster"></div>
+      <div class="col-title" style="margin-top:16px;">앰비언트</div>
+      <button class="wbtn" id="btn-idle" style="width:100%;">💬 혼잣말 시키기</button>
+    </div>
+
+    <div class="chat">
+      <div class="chat-head">
+        <span id="chat-ava">🌿</span>
+        <b id="chat-name">미라 · 약초상</b>
+        <span class="env mono">on-device · $0</span>
+      </div>
+      <div id="log"></div>
+      <div class="composer">
+        <textarea id="input" rows="1" placeholder="미라에게 말 걸기…"></textarea>
+        <button id="send">보내기</button>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    같은 주민, 세상이 바뀌면 반응이 바뀝니다. 세계 상태를 바꾸고 다시 말을 걸어보세요.<br>
+    <code>pip install maeul</code> 로 로컬에서도 서버로도 · MIT ·
+    <a href="https://github.com/MUSE-CODE-SPACE/maeul" target="_blank" rel="noopener">github.com/MUSE-CODE-SPACE/maeul</a>
+  </footer>
+</div>
+
+<div id="toast"></div>
+
+<div id="gate">
+  <div class="gate-card">
+    <h2>이 라이브 데모는 WebGPU가 필요해요</h2>
+    <p>브라우저 안에서 진짜 LLM을 돌리기 때문에 <b>WebGPU</b>가 필요합니다.
+      최신 <b>Chrome</b> 또는 <b>Edge</b>(데스크톱)에서 열어주세요.<br><br>
+      엔진 자체는 서버 없이 로컬 Python으로도 돌아갑니다 —
+      <a href="https://github.com/MUSE-CODE-SPACE/maeul" target="_blank" rel="noopener">GitHub의 퀵스타트</a>를 보세요.</p>
+  </div>
+</div>
+
+<script type="module" src="./app.js"></script>
+</body>
+</html>
