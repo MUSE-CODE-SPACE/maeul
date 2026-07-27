@@ -4,6 +4,10 @@
 
 **A tiny, money-free LLM engine for game-village NPCs.**
 
+![Maeul demo — the same villager, calm at the market then terrified in a flood, running on local qwen3:8b for $0](docs/media/demo.gif)
+
+<sub>Real output, local `qwen3:8b`, $0. The herbalist 미라 is cheerful at the market — until a flood hits and she panics, in character.</sub>
+
 Villagers with real personalities · dialogue that changes day to day · reactions that fit the moment
 (calm at the market, *terrified* in a flood) · and RAG answers grounded in **your** game's lore.
 
