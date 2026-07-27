@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "maeul"
+version = "0.1.0"
+description = "A tiny, money-free LLM engine for game-village NPCs — personalities, daily-varying dialogue, situational reactions, and RAG lore. Runs on-device (local Ollama) or a web server."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "MUSE" }]
+keywords = ["game", "npc", "llm", "villager", "rag", "ollama", "on-device", "unity", "dialogue"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Topic :: Games/Entertainment",
+  "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+# Core needs NOTHING but the standard library + a local model runner (Ollama).
+dependencies = []
+
+[project.optional-dependencies]
+yaml = ["pyyaml>=6"]                 # nicer character cards (JSON also works with zero deps)
+server = ["fastapi>=0.110", "uvicorn>=0.29"]
+embed = []                           # local Ollama embeddings — no python dep, just a model pull
+
+[project.scripts]
+maeul = "maeul.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/MUSE-CODE-SPACE/maeul"
