@@ -24,24 +24,31 @@ export const EMOTION_UI = {
 };
 
 // ── schema.py: tolerant reply parser ────────────────────────────────────────
-// Grab a "key": "value" string even from TRUNCATED JSON (no closing quote/brace),
-// so we can live-render the spoken line WHILE the model is still streaming it.
+// Small on-device models are inconsistent: some emit clean JSON, some emit
+// `key: "value"` or even unquoted `emotion: happy, action: None`. We salvage a
+// field from ALL of those shapes — and from TRUNCATED output — so the spoken
+// line can even be live-rendered WHILE the model is still streaming it.
+function unnull(v) {
+  if (v == null) return null;
+  const t = String(v).trim();
+  return /^(null|none|없음|)$/i.test(t) ? null : t;
+}
 function fieldOf(raw, key) {
-  const re = new RegExp('"' + key + '"\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', "s");
-  const m = re.exec(raw);
-  if (!m) return null;
-  let val = m[1]
-    .replace(/\\"/g, '"')
-    .replace(/\\n/g, " ")
-    .replace(/\\\//g, "/")
-    .replace(/\\$/, "");
-  return val.trim();
+  // 1) quoted value:  "key":"…"   or   key: "…"   (also matches while truncated)
+  let m = new RegExp('"?' + key + '"?\\s*:\\s*"((?:[^"\\\\]|\\\\.)*)', "s").exec(raw);
+  if (m) {
+    return m[1].replace(/\\"/g, '"').replace(/\\n/g, " ")
+      .replace(/\\\//g, "/").replace(/\\$/, "").trim();
+  }
+  // 2) unquoted value:  key: happy   (stop at comma / brace / newline)
+  m = new RegExp('"?' + key + '"?\\s*:\\s*([^",}\\n]+)', "s").exec(raw);
+  return m ? m[1].trim() : null;
 }
 
 const JSON_BLOCK = /\{[\s\S]*\}/;
 
-// Parse a model response into a Reply — tolerant of messy or TRUNCATED JSON.
-//   1) a complete {...} block,  2) regex-salvage fields from partial JSON,
+// Parse a model response into a Reply — tolerant of JSON, key:value, or prose.
+//   1) a complete {...} block,  2) regex-salvage fields from partial/loose text,
 //   3) fall back to raw text as the spoken line.  Emotion normalized to the set.
 export function parseReply(raw, fallbackTopic = null) {
   raw = (raw || "").trim();
@@ -55,20 +62,19 @@ export function parseReply(raw, fallbackTopic = null) {
   if (data && (("line" in data) || ("text" in data))) {
     line = String(data.line || data.text || "").trim();
     emotion = String(data.emotion || "neutral").trim().toLowerCase();
-    action = data.action || null;
-    topic = data.topic || fallbackTopic;
+    action = unnull(data.action);
+    topic = unnull(data.topic) || fallbackTopic;
   } else {
     line = fieldOf(raw, "line") || fieldOf(raw, "text") || "";
     emotion = (fieldOf(raw, "emotion") || "neutral").toLowerCase();
-    action = fieldOf(raw, "action");
-    topic = fieldOf(raw, "topic") || fallbackTopic;
-    // Last resort: the model didn't emit JSON at all — treat it as the line.
-    if (!line && raw && !raw.includes("{")) line = raw;
+    action = unnull(fieldOf(raw, "action"));
+    topic = unnull(fieldOf(raw, "topic")) || fallbackTopic;
+    // Last resort: no recognizable fields — treat the whole thing as the line.
+    if (!line && raw && !/["{]/.test(raw)) line = raw;
   }
 
   if (!EMOTIONS.includes(emotion)) emotion = "neutral";
-  if (action === "null" || action === "") action = null;
-  return { line, emotion, action, topic: topic || null };
+  return { line, emotion, action: unnull(action), topic: topic || null };
 }
 
 // ── ① character.py: a villager is just a data card ──────────────────────────

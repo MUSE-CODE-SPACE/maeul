@@ -202,7 +202,12 @@ async function speak(villagerId, playerInput) {
   setInputEnabled(false);
 
   const c = chars.get(villagerId);
-  const system = buildSystemPrompt(c, world);
+  // Small in-browser models need a hard nudge to stay in JSON. buildSystemPrompt
+  // is the faithful engine port; we append a concrete format example here so a
+  // 1–1.5B model reliably emits the right shape (and we force json_object below).
+  const system = buildSystemPrompt(c, world) +
+    '\n\nOutput EXACTLY one JSON object, nothing else. Example shape:\n' +
+    '{"line":"아이고, 어서 와요!","emotion":"happy","action":"손을 흔든다","topic":"인사"}';
   const user = buildUserPrompt(playerInput);
 
   // Placeholder NPC message we mutate as tokens stream in.
@@ -211,10 +216,15 @@ async function speak(villagerId, playerInput) {
   log.push(msg);
   renderChat();
   const bubble = msg._bubble, badge = msg._badge, row = msg._row;
-  bubble.classList.add("streaming");
+  bubble.classList.add("thinking");
+  bubble.textContent = "";
 
   let raw = "";
   try {
+    // Streamed free text. We deliberately DON'T force json_object: on some WebLLM
+    // builds grammar-constrained decoding stalls. Instead the villager's words
+    // stream in and the tolerant parser (engine.js) live-extracts the `line` from
+    // whatever shape the model emits — JSON, `key: value`, or plain prose.
     const stream = await engine.chat.completions.create({
       messages: [{ role: "system", content: system }, { role: "user", content: user }],
       temperature: 0.7,
@@ -223,11 +233,8 @@ async function speak(villagerId, playerInput) {
     });
     for await (const chunk of stream) {
       raw += chunk.choices[0]?.delta?.content || "";
-      // Live-parse: the tolerant parser grabs `line` even from half-written JSON,
-      // so the villager's words appear as they're generated. This is the same
-      // parser the Python engine uses — here it powers a live typing effect.
       const p = parseReply(raw);
-      if (p.line) bubble.textContent = p.line;
+      if (p.line) { bubble.classList.remove("thinking"); bubble.textContent = p.line; }
       if (p.emotion && p.emotion !== msg.emotion) {
         msg.emotion = p.emotion;
         const ui = EMOTION_UI[p.emotion];
@@ -237,23 +244,24 @@ async function speak(villagerId, playerInput) {
       $("#log").scrollTop = $("#log").scrollHeight;
     }
   } catch (e) {
+    bubble.classList.remove("thinking");
     bubble.textContent = "(모델 오류: " + (e?.message || e) + ")";
+    busy = false; setInputEnabled(true); return;
   }
 
-  // Final parse fixes emotion/action/line once the JSON is complete.
+  // Final reconcile once the whole reply is in — fixes emotion/action/line.
   const final = parseReply(raw);
-  msg.line = final.line || bubble.textContent;
+  msg.line = final.line || bubble.textContent || "…";
   msg.emotion = final.emotion;
   msg.action = final.action;
-  bubble.classList.remove("streaming");
-  bubble.textContent = msg.line || "…";
+  bubble.classList.remove("thinking");
+  bubble.textContent = msg.line;
   const ui = EMOTION_UI[msg.emotion];
   badge.textContent = msg.emotion;
   badge.className = `badge ${ui.tone}`;
-  if (msg.action) {
-    const a = el("div", "action", `※ ${msg.action}`);
-    row.querySelector(".npc-body").appendChild(a);
-  }
+  if (msg.action)
+    row.querySelector(".npc-body").appendChild(el("div", "action", `※ ${msg.action}`));
+
   // Reflect the villager's new emotion on their roster portrait.
   emotionOf.set(villagerId, msg.emotion);
   renderRoster();
@@ -265,9 +273,9 @@ async function speak(villagerId, playerInput) {
 
 // ── Model loading (WebLLM) ─────────────────────────────────────────────────────
 const MODELS = {
-  "Qwen2.5-1.5B-Instruct-q4f16_1-MLC": "Qwen2.5 1.5B · 한국어 양호 · 최초 1회 ~1.0GB",
-  "Qwen2.5-0.5B-Instruct-q4f16_1-MLC": "Qwen2.5 0.5B · 가장 빠름 · 최초 1회 ~0.5GB",
-  "Llama-3.2-1B-Instruct-q4f16_1-MLC": "Llama 3.2 1B · 최초 1회 ~0.7GB",
+  "Qwen2.5-3B-Instruct-q4f16_1-MLC":   "Qwen2.5 3B · 권장 · 한국어·감정반응 안정 · 최초 1회 ~1.9GB",
+  "Qwen2.5-1.5B-Instruct-q4f16_1-MLC": "Qwen2.5 1.5B · 가벼움 ~1.0GB · 한국어 다소 거침",
+  "Llama-3.2-3B-Instruct-q4f16_1-MLC": "Llama 3.2 3B · 대안 ~1.9GB",
 };
 
 async function loadModel() {

@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>마을 · Maeul — 브라우저 안에서 도는 게임 NPC LLM</title>
 <meta name="description" content="게임 마을 NPC를 위한 무료·온디바이스 LLM 엔진. 이 데모의 모든 추론은 당신의 브라우저 안에서 돕니다 — 서버 없음, API 키 없음, $0." />
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8F%98%EF%B8%8F%3C/text%3E%3C/svg%3E" />
 <style>
   :root {
     --ground:#0b0e14; --panel:#131926; --panel2:#0f141e; --line:rgba(255,255,255,.08);
@@ -118,8 +119,10 @@
   .msg.npc { align-items:flex-start; }
   .npc-body { display:flex; flex-direction:column; gap:5px; min-width:0; }
   .npc-line { background:var(--panel2); border:1px solid var(--line); border-bottom-left-radius:4px; }
-  .npc-line.streaming::after { content:"▋"; color:var(--lantern); animation:blink 1s steps(1) infinite; }
-  @keyframes blink { 50%{ opacity:0; } }
+  .npc-line.thinking { color:var(--faint); min-width:44px; }
+  .npc-line.thinking::after { content:"● ● ●"; font-size:11px; letter-spacing:1px;
+    animation:blink 1.2s steps(1) infinite; }
+  @keyframes blink { 50%{ opacity:.25; } }
   .action { font-size:12px; color:var(--faint); font-style:italic; padding-left:3px; }
   .badge { flex:none; font-weight:900; font-size:12px; border-radius:8px; padding:4px 9px;
     letter-spacing:.02em; text-transform:lowercase; }
