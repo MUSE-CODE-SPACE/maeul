@@ -20,7 +20,7 @@ Villagers with real personalities · dialogue that changes day to day · reactio
 Runs 100% on your machine via local Ollama — **$0, no API key, offline.**
 Or serve it to any engine over HTTP.
 
-`pip install maeul` · MIT · Python 3.9+
+`pip install git+https://github.com/MUSE-CODE-SPACE/maeul.git` · MIT · Python 3.9+
 
 </div>
 
@@ -54,8 +54,8 @@ Game NPCs are still stuck between two bad options:
 brew install ollama            # or: https://ollama.com
 ollama pull qwen3:8b           # any local model works
 
-# 2) Maeul
-pip install maeul
+# 2) Maeul (not yet on PyPI — install from GitHub)
+pip install git+https://github.com/MUSE-CODE-SPACE/maeul.git
 
 # 3) talk to a villager — $0, offline
 python -m maeul.cli chat --who mira
@@ -106,7 +106,7 @@ Same day, different villagers — different souls:
 Run the server (still local, still free):
 
 ```bash
-pip install "maeul[server]"
+pip install "maeul[server] @ git+https://github.com/MUSE-CODE-SPACE/maeul.git"
 maeul serve --village examples/village --model qwen3:8b
 ```
 

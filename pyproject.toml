@@ -22,7 +22,7 @@ dependencies = []
 
 [project.optional-dependencies]
 yaml = ["pyyaml>=6"]                 # nicer character cards (JSON also works with zero deps)
-server = ["fastapi>=0.110", "uvicorn>=0.29"]
+server = ["fastapi>=0.115", "uvicorn>=0.34"]
 embed = []                           # local Ollama embeddings — no python dep, just a model pull
 
 [project.scripts]
